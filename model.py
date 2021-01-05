@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -8,6 +7,13 @@ from tensorflow.keras.layers import Input, BatchNormalization, Conv2D, UpSamplin
 from tensorflow.keras.models import Model
 
 def create_dataset(image_path, mask_path):
+  """
+  Creates image dataset for training
+  
+  Parameters:
+  image_path - The path to the directory containing the RGB images
+  mask_path - The path to the directory containing the image masks (labels)
+  """
   X = np.zeros((5000,128,128,3))
   Y = np.zeros((5000,128*128,2))
   for i in tqdm(range(5000)):
@@ -28,56 +34,71 @@ def create_dataset(image_path, mask_path):
   return X_prep, Y_prep
 
 def create_segnet_model(img_height, img_width):
-    kernel = 3
-    pool_size = 2
-    kernel_size = 64
+  """
+  Creates a model inspired by the SegNet architecture
+  The model uses the Keras pre-trained ResNet152V2 as the encoder
 
-    input_shape = Input(shape=(img_height,img_width,3))
-    model = tf.keras.applications.ResNet152V2(weights="imagenet", include_top=False, input_tensor=input_shape, pooling=None)
-    # Decoder Layers
+  Parameters:
+  img_height - The height of the images in the dataset
+  img_width - The width of the images in the dataset
+  """
+  kernel = 3
+  pool_size = 2
+  kernel_size = 64
 
-    # Block 1
-    o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(model.layers[-3].output)
-    o = Conv2D(kernel_size*8, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = BatchNormalization()(o)
+  input_shape = Input(shape=(img_height,img_width,3))
+  model = tf.keras.applications.ResNet152V2(weights="imagenet", include_top=False, input_tensor=input_shape, pooling=None)
+  # Decoder Layers
 
-    # Block 2
-    o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(o)
-    o = Conv2D(kernel_size*4, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = BatchNormalization()(o)
-    o = Conv2D(kernel_size*4, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = BatchNormalization()(o)
+  # Block 1
+  o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(model.layers[-3].output)
+  o = Conv2D(kernel_size*8, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = BatchNormalization()(o)
+
+  # Block 2
+  o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(o)
+  o = Conv2D(kernel_size*4, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = BatchNormalization()(o)
+  o = Conv2D(kernel_size*4, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = BatchNormalization()(o)
 
 
-    # Block 3
-    o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(o)
-    o = Conv2D(kernel_size*2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = BatchNormalization()(o)
-    o = Conv2D(kernel_size*2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = BatchNormalization()(o)
+  # Block 3
+  o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(o)
+  o = Conv2D(kernel_size*2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = BatchNormalization()(o)
+  o = Conv2D(kernel_size*2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = BatchNormalization()(o)
 
-    # Block 4
-    o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(o)
-    o = Conv2D(kernel_size*2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = BatchNormalization()(o)
-    o = Conv2D(kernel_size*2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = BatchNormalization()(o)
+  # Block 4
+  o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(o)
+  o = Conv2D(kernel_size*2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = BatchNormalization()(o)
+  o = Conv2D(kernel_size*2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = BatchNormalization()(o)
 
-    # Block 5
-    o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(o)
-    o = Conv2D(kernel_size, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = BatchNormalization()(o)
-    o = Conv2D(kernel_size, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = BatchNormalization()(o)
+  # Block 5
+  o = UpSampling2D(size=(pool_size, pool_size), data_format='channels_last')(o)
+  o = Conv2D(kernel_size, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = BatchNormalization()(o)
+  o = Conv2D(kernel_size, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = BatchNormalization()(o)
 
-    # Output Block
-    o = Conv2D(2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
-    o = Reshape((128*128,2))(o)
-    o = Activation('softmax')(o)
+  # Output Block
+  o = Conv2D(2, (kernel, kernel), padding='same', activation='relu', data_format='channels_last', kernel_initializer='he_normal')(o)
+  o = Reshape((128*128,2))(o)
+  o = Activation('softmax')(o)
 
-    return Model(inputs=model.inputs, outputs=o)
+  return Model(inputs=model.inputs, outputs=o)
 
 def create_test_dataset(image_path, mask_path):
+  """
+  Create image dataset for testing the model
+
+  Parameters:
+  image_path - The path to the directory containing the RGB images
+  mask_path - The path to the directory containing the image masks (labels)
+  """
   X = np.zeros((120,128,128,3))
   Y = np.zeros((120,128*128,2))
   for i in tqdm(range(120)):
